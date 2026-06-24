@@ -1,4 +1,7 @@
-<?php
+<?p<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+hp
 // Railway dashboard se dekh kar yahan sahi values bhar do
 $host = "containers-us-west-11.railway.app"; // Tumhare dashboard mein jo MYSQLHOST hai
 $db   = "railway";
