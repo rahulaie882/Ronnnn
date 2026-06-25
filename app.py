@@ -26,7 +26,7 @@ def index():
     
     # HTML Panel
     return render_template_string('''
-        <h2>VIAXOR Control Panel</h2>
+        <h2>BABA Control Panel</h2>
         <form method="POST">
             Price: <input type="text" name="price" value="{{ data.price }}"><br><br>
             UPI: <input type="text" name="upi" value="{{ data.upi }}"><br><br>
