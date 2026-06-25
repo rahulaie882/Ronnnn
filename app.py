@@ -1,43 +1,63 @@
 import json
 import os
-from flask import Flask, render_template_string, request
+from flask import Flask, render_template_string
 
 app = Flask(__name__)
-DATA_FILE = 'data.json'
 
-# Data load/save functions
-def load_data():
-    if not os.path.exists(DATA_FILE):
-        return {"price": "100", "upi": "your@upi"}
-    with open(DATA_FILE, 'r') as f:
-        return json.load(f)
+# Dummy data jo tum database ya JSON se fetch kar sakte ho
+data = {
+    "total_users": "4,507",
+    "active_subs": "25",
+    "pending_payments": "0",
+    "open_reports": "1",
+    "total_revenue": "6,267",
+    "license_expiry": "5 days left"
+}
 
-def save_data(data):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(data, f)
-
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def index():
-    data = load_data()
-    if request.method == 'POST':
-        data['price'] = request.form.get('price', data['price'])
-        data['upi'] = request.form.get('upi', data['upi'])
-        save_data(data)
-    
-    # HTML Panel
     return render_template_string('''
-        <h2>BABA Control Panel</h2>
-        <form method="POST">
-            Price: <input type="text" name="price" value="{{ data.price }}"><br><br>
-            UPI: <input type="text" name="upi" value="{{ data.upi }}"><br><br>
-            <button type="submit">Save Changes</button>
-        </form>
-        <hr>
-        <p>Current Price: {{ data.price }}</p>
-        <p>Current UPI: {{ data.upi }}</p>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+            body { background-color: #121212; color: white; font-family: sans-serif; }
+            .card { background-color: #1e1e1e; border: none; border-radius: 15px; color: white; margin-bottom: 15px; padding: 15px; }
+            .card-icon { font-size: 20px; }
+            .value { font-size: 24px; font-weight: bold; }
+        </style>
+    </head>
+    <body class="p-3">
+        <h4 class="mb-4">Dashboard</h4>
+        <div class="card">
+            <div class="value">{{ data.total_users }}</div>
+            <div>Total Users</div>
+        </div>
+        <div class="card">
+            <div class="value">{{ data.active_subs }}</div>
+            <div>Active Subs</div>
+        </div>
+        <div class="card">
+            <div class="value">{{ data.pending_payments }}</div>
+            <div>Pending Payments</div>
+        </div>
+        <div class="card">
+            <div class="value">{{ data.open_reports }}</div>
+            <div>Open Reports</div>
+        </div>
+        <div class="card">
+            <div class="value">₹{{ data.total_revenue }}</div>
+            <div>Total Revenue</div>
+        </div>
+        <div class="card text-danger">
+            <div class="value">{{ data.license_expiry }}</div>
+            <div>Licence Expiry</div>
+        </div>
+    </body>
+    </html>
     ''', data=data)
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
     
