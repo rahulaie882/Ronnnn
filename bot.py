@@ -20,7 +20,7 @@ ADMIN_ID = 8755368088
 
 # Start page photo aur QR. Baad me apne links/file_id laga sakte ho.
 MAIN_PHOTO = "https://nei1-ba101f5dd8aa.herokuapp.com/stream/177757?hash=61f1c7&d=true"
-QR_PHOTO = "https://image-link.edgeone.app/1789389686431-h0mxpb.jpg"
+QR_PHOTO = "https://files.catbox.moe/0qgj08.jpg"
 UPI_ID = "Q691189350@ybl"
 
 # ==========================================================
