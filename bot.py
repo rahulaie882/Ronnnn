@@ -233,11 +233,9 @@ START_TEXT = """
 
 🥵  𝘼𝙇𝙇 𝙏𝙃𝙀  𝙎𝙏𝙐𝙁𝙁𝙎 𝗔𝗩𝗜𝗟𝗔𝗕𝗟𝗘   🥵
 
-👇 💝      𝗙𝗥𝗘𝗘 𝗠𝗠𝗦 𝗚𝗥𝗢𝗨𝗣      💝 👇
+👇 💝      𝗠𝗠𝗦 PAYMENT PROOF𝗚𝗥𝗢𝗨𝗣      💝 👇
 
-:- https://t.me/+kzk7D8el3vhlYTI1
-:- https://t.me/+twVE0U2IbNViNGY1
-
+:- https://t.me/+lk7WmoGJWD0zMWEx
 ⚡ **𝐈𝐧𝐬𝐭𝐚𝐧𝐭 𝐀𝐜𝐜𝐞𝐬𝐬 𝐀𝐯𝐚𝐢𝐥𝐚𝐛𝐥𝐞 𝐅𝐨𝐫 𝐘𝐨𝐮!**
 
 👇 CHOOSE AN OPTION BELOW 👇
