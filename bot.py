@@ -20,8 +20,8 @@ ADMIN_ID = 8755368088
 
 # Start page photo aur QR. Baad me apne links/file_id laga sakte ho.
 MAIN_PHOTO = "https://nei1-ba101f5dd8aa.herokuapp.com/stream/177757?hash=61f1c7&d=true"
-QR_PHOTO = "https://nei3-1be38d8e4e43.herokuapp.com/stream/47098?hash=362e48&d=true"
-UPI_ID = "imxinx@ptyes"
+QR_PHOTO = "https://image-link.edgeone.app/1789389686431-h0mxpb.jpg"
+UPI_ID = "Q691189350@ybl"
 
 # ==========================================================
 # PACKAGES
@@ -233,10 +233,10 @@ START_TEXT = """
 
 🥵  𝘼𝙇𝙇 𝙏𝙃𝙀  𝙎𝙏𝙐𝙁𝙁𝙎 𝗔𝗩𝗜𝗟𝗔𝗕𝗟𝗘   🥵
 
-👇 💝      𝗙𝗥𝗘𝗘 𝗠𝗠𝗦 𝗚𝗥𝗢𝗨𝗣      💝 👇
+👇 💝      𝗠𝗠𝗦 PAYMENT PROOFS 𝗚𝗥𝗢𝗨𝗣      💝 👇
 
-:- https://t.me/+kzk7D8el3vhlYTI1
-:- https://t.me/+twVE0U2IbNViNGY1
+:- https://t.me/+utYi98Y7oSQ5NmIx
+:- https://t.me/+utYi98Y7oSQ5NmIx
 
 ⚡ **𝐈𝐧𝐬𝐭𝐚𝐧𝐭 𝐀𝐜𝐜𝐞𝐬𝐬 𝐀𝐯𝐚𝐢𝐥𝐚𝐛𝐥𝐞 𝐅𝐨𝐫 𝐘𝐨𝐮!**
 
