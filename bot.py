@@ -1,68 +1,69 @@
 import logging
 import asyncio
 os = __import__('os')
-from telethon import TelegramClient, events
+from telethon import TelegramClient
 from telethon.sessions import StringSession
 
-# आपकी API Credentials
+# Aapki API Credentials
 api_id = 38322948
 api_hash = '71abd5e892c8ecd676cd3460fb2289fb'
 
-# Railway के Environment Variable से Session उठाएगा
+# Railway ke Environment Variable se Session uthayega
 string_session = os.environ.get('SESSION_STRING', '')
 
-# चैनल्स की सही IDs (यहाँ अपडेट कर दिया गया है)
+# Channels ki sahi IDs
 SOURCE_CHANNEL = -1001624901868
 TARGET_CHANNEL = -1004368578273
 
-# लॉगिंग सेट अप
+# Logging setup
 logging.basicConfig(level=logging.INFO)
 
-# StringSession का इस्तेमाल करके क्लाइंट इनिशियलाइज करें
+# Client initialize karein
 client = TelegramClient(StringSession(string_session), api_id, api_hash)
 
-# वीडियो गिनने के लिए काउंटर
-uploaded_count = 0
-
-@client.on(events.NewMessage(chats=SOURCE_CHANNEL))
-async def download_and_upload_handler(event):
-    global uploaded_count
-    try:
-        # चेक करें कि मैसेज में वीडियो या वीडियो डॉक्यूमेंट है या नहीं
-        if event.message.video or (event.message.document and 'video' in event.message.document.mime_type):
-            print("नया वीडियो मिल गया, डाउनलोड किया जा रहा है...")
-            
-            # वीडियो को डाउनलोड करें
-            file_path = await event.message.download_media()
-            print("डाउनलोड हो गया, 5 सेकंड रुक कर टारगेट चैनल पर अपलोड किया जा रहा है...")
-            
-            # हर वीडियो के बीच छोटा गैप (5 सेकंड)
-            await asyncio.sleep(5)
-            
-            # बिना फॉरवर्ड टैग के नए वीडियो की तरह अपलोड करें
-            await client.send_file(
-                TARGET_CHANNEL, 
-                file_path, 
-                caption=event.message.text
-            )
-            
-            uploaded_count += 1
-            print(f"सफलतापूर्वक अपलोड किए गए कुल वीडियो: {uploaded_count}")
-            
-            # हर 100 वीडियो पूरे होने पर 10 मिनट (600 सेकंड) का ब्रेक
-            if uploaded_count % 100 == 0:
-                print(f"100 वीडियो पूरे हो चुके हैं! सुरक्षा के लिए अगले 10 मिनट का रेस्ट लिया जा रहा है...")
-                await asyncio.sleep(600)  # 600 सेकंड = 10 मिनट
-                print("रेस्ट पूरा हुआ, अब आगे के वीडियो अपलोड होंगे।")
+async def forward_old_videos():
+    print("Userbot shuru ho gaya hai, purane videos scan kiye ja rahe hain...")
+    uploaded_count = 0
+    
+    async with client:
+        # Source channel ke messages ko purane se naye kram me padhna shuru karega
+        async for message in client.iter_messages(SOURCE_CHANNEL, reverse=True):
+            try:
+                # Check karein ki message mein video hai ya nahi
+                if message.video or (message.document and 'video' in message.document.mime_type):
+                    print("Clean video mil gaya, download kiya ja raha hai...")
+                    
+                    # Video download karein (caption bilkul nahi lenge)
+                    file_path = await message.download_media()
+                    print("Download ho gaya, 5 second ruk kar target channel par clean upload ho raha hai...")
+                    
+                    # Safety ke liye 5 second ka gap
+                    await asyncio.sleep(5)
+                    
+                    # Bina kisi caption/text aur bina forward tag ke upload karein
+                    await client.send_file(
+                        TARGET_CHANNEL, 
+                        file_path, 
+                        caption=None  # Caption ko bilkul khali chhod diya hai taaki koi text/notice na jaye
+                    )
+                    
+                    uploaded_count += 1
+                    print(f"Safaltaपूर्वक upload kiye gaye kul clean videos: {uploaded_count}")
+                    
+                    # Har 50 ya 100 videos ke baad chhota break dena chahen toh de sakte hain
+                    if uploaded_count % 50 == 0:
+                        print("Safety ke liye 5 minute ka rest liya ja raha hai...")
+                        await asyncio.sleep(300)
+                        
+            except Exception as e:
+                print(f"Error aa gaya is message par: {e}")
+                continue
                 
-    except Exception as e:
-        print(f"एरर आ गया: {e}")
+    print("Source channel ke saare videos successfully forward ho chuke hain!")
 
 def main():
-    print("यूज़रबॉट Railway पर शुरू हो रहा है...")
-    client.start()
-    print("यूज़रबॉट लाइव है और वीडियो का इंतज़ार कर रहा है!")
-    client.run_until_disconnected()
+    with client:
+        client.loop.run_until_complete(forward_old_videos())
 
 if __name__ == '__main__':
     main()
