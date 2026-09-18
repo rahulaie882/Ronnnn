@@ -11,9 +11,9 @@ api_hash = '71abd5e892c8ecd676cd3460fb2289fb'
 # Railway के Environment Variable से Session उठाएगा
 string_session = os.environ.get('SESSION_STRING', '')
 
-# जो लिंक्स आपने दिए हैं
-SOURCE_CHANNEL = 'https://t.me/+jGIqRcawDX4wNjM1'
-TARGET_CHANNEL = 'https://t.me/+tDuIpvJe2LM0Y2Yx'
+# चैनल्स की सही IDs (यहाँ अपडेट कर दिया गया है)
+SOURCE_CHANNEL = -1001624901868
+TARGET_CHANNEL = -1004368578273
 
 # लॉगिंग सेट अप
 logging.basicConfig(level=logging.INFO)
@@ -66,4 +66,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-  
+    
