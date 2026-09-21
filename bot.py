@@ -21,41 +21,44 @@ logging.basicConfig(level=logging.INFO)
 # Client initialize karein
 client = TelegramClient(StringSession(string_session), api_id, api_hash)
 
-async def forward_old_videos():
-    print("Userbot shuru ho gaya hai, purane videos scan kiye ja rahe hain...")
+async def fast_transfer_videos():
+    print("Superfast direct transfer shuru ho gaya hai...")
     uploaded_count = 0
     
     async with client:
+        # Purane se naye kram mein messages padhenge
         async for message in client.iter_messages(SOURCE_CHANNEL, reverse=True):
             try:
+                # Check karein ki message mein video hai ya nahi
                 if message.video or (message.document and 'video' in message.document.mime_type):
-                    print("Clean video mil gaya, download kiya ja raha hai...")
                     
-                    file_path = await message.download_media()
-                    print("Download ho gaya, target channel par clean upload ho raha hai...")
-                    
+                    # Direct media object bhejenge bina download kiye (Isse forward tag bhi nahi aayega aur speed lightning fast hogi)
                     await client.send_file(
                         TARGET_CHANNEL, 
-                        file_path, 
-                        caption=None
+                        message.media, 
+                        caption=None # Caption bilkul hata diya gaya hai
                     )
                     
                     uploaded_count += 1
-                    print(f"Safaltaपूर्वक upload kiye gaye kul clean videos: {uploaded_count}")
+                    print(f"Superfast sent count: {uploaded_count}")
                     
+                    # Agar 100 videos ho jayein tab 5 minute ka rest lein taaki flood wait na aaye
                     if uploaded_count % 100 == 0:
-                        print(f"100 videos poori ho chuki hain! Ab safety ke liye 5 minute ka rest liya ja raha hai...")
+                        print("100 videos ho chuki hain, 5 minute ka rest liya ja raha hai...")
                         await asyncio.sleep(300)
+                    else:
+                        # Bina kisi rukawat ke tezi se bhejne ke liye chhota sa gap (0.5 second)
+                        await asyncio.sleep(0.5)
                         
             except Exception as e:
-                print(f"Error aa gaya is message par: {e}")
+                print(f"Error aa gaya: {e}")
                 continue
                 
-    print("Source channel ke saare videos successfully forward ho chuke hain!")
+    print("Sabhi videos successfully transfer ho chuke hain!")
 
 def main():
     with client:
-        client.loop.run_until_complete(forward_old_videos())
+        client.loop.run_until_complete(fast_transfer_videos())
 
 if __name__ == '__main__':
     main()
