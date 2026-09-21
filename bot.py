@@ -8,12 +8,12 @@ from telethon.sessions import StringSession
 api_id = 38322948
 api_hash = '71abd5e892c8ecd676cd3460fb2289fb'
 
-# Railway ke Environment Variable se Session uthayega
+# Railway ke Environment Variable se String Session
 string_session = os.environ.get('SESSION_STRING', '')
 
-# Channels ki sahi IDs
+# Channels ki IDs
 SOURCE_CHANNEL = -1001624901868
-TARGET_CHANNEL = -1004368578273
+TARGET_CHANNEL = -1004392281798
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -26,33 +26,25 @@ async def forward_old_videos():
     uploaded_count = 0
     
     async with client:
-        # Source channel ke messages ko purane se naye kram me padhna shuru karega
         async for message in client.iter_messages(SOURCE_CHANNEL, reverse=True):
             try:
-                # Check karein ki message mein video hai ya nahi
                 if message.video or (message.document and 'video' in message.document.mime_type):
                     print("Clean video mil gaya, download kiya ja raha hai...")
                     
-                    # Video download karein (caption bilkul nahi lenge)
                     file_path = await message.download_media()
-                    print("Download ho gaya, 5 second ruk kar target channel par clean upload ho raha hai...")
+                    print("Download ho gaya, target channel par clean upload ho raha hai...")
                     
-                    # Safety ke liye 5 second ka gap
-                    await asyncio.sleep(5)
-                    
-                    # Bina kisi caption/text aur bina forward tag ke upload karein
                     await client.send_file(
                         TARGET_CHANNEL, 
                         file_path, 
-                        caption=None  # Caption ko bilkul khali chhod diya hai taaki koi text/notice na jaye
+                        caption=None
                     )
                     
                     uploaded_count += 1
                     print(f"Safaltaपूर्वक upload kiye gaye kul clean videos: {uploaded_count}")
                     
-                    # Har 50 ya 100 videos ke baad chhota break dena chahen toh de sakte hain
-                    if uploaded_count % 50 == 0:
-                        print("Safety ke liye 5 minute ka rest liya ja raha hai...")
+                    if uploaded_count % 100 == 0:
+                        print(f"100 videos poori ho chuki hain! Ab safety ke liye 5 minute ka rest liya ja raha hai...")
                         await asyncio.sleep(300)
                         
             except Exception as e:
