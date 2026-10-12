@@ -15,9 +15,9 @@ if not string_session:
     print("CRITICAL ERROR: Railway variables mein 'SESSION_STRING' nahi mila ya khali hai!")
     exit(1)
 
-# Channels ki IDs
-SOURCE_CHANNEL = -1001624901868
-TARGET_CHANNEL = -1004392281798
+# Channels ki IDs (Updated)
+SOURCE_CHANNEL = -1003873597935
+TARGET_CHANNEL = -1004490293383
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -26,25 +26,36 @@ logging.basicConfig(level=logging.INFO)
 client = TelegramClient(StringSession(string_session), api_id, api_hash)
 
 async def fast_transfer_videos():
-    print("Superfast direct transfer shuru ho gaya hai...")
+    print("Bypass transfer (Download & Re-upload) shuru ho gaya hai...")
     uploaded_count = 0
     
     async with client:
         # Purane se naye kram mein messages padhenge
         async for message in client.iter_messages(SOURCE_CHANNEL, reverse=True):
+            file_path = None
             try:
                 # Check karein ki message mein video hai ya nahi
                 if message.video or (message.document and 'video' in message.document.mime_type):
+                    print(f"📥 Video download ki ja rahi hai (ID: {message.id})...")
                     
-                    # Direct media object bhejenge bina download kiye
-                    await client.send_file(
-                        TARGET_CHANNEL, 
-                        message.media, 
-                        caption=None # Caption bilkul hata diya gaya hai
-                    )
+                    # Forward restriction bypass karne ke liye pehle media download karein
+                    file_path = await message.download_media()
                     
-                    uploaded_count += 1
-                    print(f"Superfast sent count: {uploaded_count}")
+                    if file_path and os.path.exists(file_path):
+                        print(f"📤 Target channel par fresh upload ho rahi hai...")
+                        
+                        # Target channel par re-upload karein (Caption bilkul hata diya gaya hai)
+                        await client.send_file(
+                            TARGET_CHANNEL, 
+                            file_path, 
+                            caption=None,
+                            supports_streaming=True
+                        )
+                        
+                        uploaded_count += 1
+                        print(f"✅ Successfully sent count: {uploaded_count}")
+                    else:
+                        print(f"⚠️ File download nahi ho saki: {message.id}")
                     
                     # Agar 100 videos ho jayein tab 5 minute ka rest lein taaki flood wait na aaye
                     if uploaded_count % 100 == 0:
@@ -55,8 +66,16 @@ async def fast_transfer_videos():
                         await asyncio.sleep(0.5)
                         
             except Exception as e:
-                print(f"Error aa gaya: {e}")
+                print(f"❌ Error aa gaya: {e}")
                 continue
+                
+            finally:
+                # Temporary file ko delete karein taaki Railway disk space full na ho
+                if file_path and os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except Exception as del_err:
+                        print(f"⚠️ Temp file delete karne mein error: {del_err}")
                 
     print("Sabhi videos successfully transfer ho chuke hain!")
 
@@ -66,4 +85,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
