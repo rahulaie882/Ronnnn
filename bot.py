@@ -15,8 +15,14 @@ if not string_session:
     print("CRITICAL ERROR: Railway variables mein 'SESSION_STRING' nahi mila ya khali hai!")
     exit(1)
 
-# Channels ki IDs (Updated)
-SOURCE_CHANNEL = -1003873597935
+# Multiple Source Channels ki Updated List
+SOURCE_CHANNELS = [
+    -1004321038948,
+    -1003863501103,
+    -1004296863313
+]
+
+# Ek hi Single Target Channel jahan saari videos upload hongi
 TARGET_CHANNEL = -1004490293383
 
 # Logging setup
@@ -25,63 +31,65 @@ logging.basicConfig(level=logging.INFO)
 # Client initialize karein
 client = TelegramClient(StringSession(string_session), api_id, api_hash)
 
-async def fast_transfer_videos():
-    print("Bypass transfer (Download & Re-upload) shuru ho gaya hai...")
+async def transfer_from_channel(source_id):
+    print(f"📥 Source channel {source_id} se transfer shuru ho raha hai...")
     uploaded_count = 0
     
-    async with client:
-        # Purane se naye kram mein messages padhenge
-        async for message in client.iter_messages(SOURCE_CHANNEL, reverse=True):
-            file_path = None
-            try:
-                # Check karein ki message mein video hai ya nahi
-                if message.video or (message.document and 'video' in message.document.mime_type):
-                    print(f"📥 Video download ki ja rahi hai (ID: {message.id})...")
-                    
-                    # Forward restriction bypass karne ke liye pehle media download karein
-                    file_path = await message.download_media()
-                    
-                    if file_path and os.path.exists(file_path):
-                        print(f"📤 Target channel par fresh upload ho rahi hai...")
-                        
-                        # Target channel par re-upload karein (Caption bilkul hata diya gaya hai)
-                        await client.send_file(
-                            TARGET_CHANNEL, 
-                            file_path, 
-                            caption=None,
-                            supports_streaming=True
-                        )
-                        
-                        uploaded_count += 1
-                        print(f"✅ Successfully sent count: {uploaded_count}")
-                    else:
-                        print(f"⚠️ File download nahi ho saki: {message.id}")
-                    
-                    # Agar 100 videos ho jayein tab 5 minute ka rest lein taaki flood wait na aaye
-                    if uploaded_count % 100 == 0:
-                        print("100 videos ho chuki hain, 5 minute ka rest liya ja raha hai...")
-                        await asyncio.sleep(300)
-                    else:
-                        # Bina kisi rukawat ke tezi se bhejne ke liye chhota sa gap
-                        await asyncio.sleep(0.5)
-                        
-            except Exception as e:
-                print(f"❌ Error aa gaya: {e}")
-                continue
+    # Purane se naye kram mein messages padhenge
+    async for message in client.iter_messages(source_id, reverse=True):
+        file_path = None
+        try:
+            # Check karein ki message mein video hai ya nahi
+            if message.video or (message.document and 'video' in message.document.mime_type):
+                print(f"📥 Video download ki ja rahi hai (ID: {message.id})...")
                 
-            finally:
-                # Temporary file ko delete karein taaki Railway disk space full na ho
+                # Forward restriction bypass karne ke liye pehle media download karein
+                file_path = await message.download_media()
+                
                 if file_path and os.path.exists(file_path):
-                    try:
-                        os.remove(file_path)
-                    except Exception as del_err:
-                        print(f"⚠️ Temp file delete karne mein error: {del_err}")
+                    print(f"📤 Target channel par fresh upload ho rahi hai...")
+                    
+                    # Target channel par re-upload karein
+                    await client.send_file(
+                        TARGET_CHANNEL, 
+                        file_path, 
+                        caption=None,
+                        supports_streaming=True
+                    )
+                    
+                    uploaded_count += 1
+                    print(f"✅ Successfully sent count from {source_id}: {uploaded_count}")
+                else:
+                    print(f"⚠️ File download nahi ho saki: {message.id}")
                 
-    print("Sabhi videos successfully transfer ho chuke hain!")
+                # Flood wait se bachne ke liye chhota sa gap
+                await asyncio.sleep(1)
+                    
+        except Exception as e:
+            print(f"❌ Error aa gaya: {e}")
+            continue
+            
+        finally:
+            # Temporary file ko delete karein taaki Railway disk space full na ho
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception as del_err:
+                    print(f"⚠️ Temp file delete karne mein error: {del_err}")
+
+async def main_runner():
+    async with client:
+        print("🤖 Multi-source transfer bot chalu ho gaya hai...")
+        
+        # Har ek source channel par ek ke baad ek process chalayega
+        for source_id in SOURCE_CHANNELS:
+            await transfer_from_channel(source_id)
+            
+        print("🎉 Sabhi source channels ki videos successfully transfer ho chuki hain!")
 
 def main():
     with client:
-        client.loop.run_until_complete(fast_transfer_videos())
+        client.loop.run_until_complete(main_runner())
 
 if __name__ == '__main__':
     main()
