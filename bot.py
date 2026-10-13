@@ -1,5 +1,5 @@
 import logging
-import asyncio
+im
 os = __import__('os')
 from telethon import TelegramClient
 from telethon.sessions import StringSession
