@@ -1,5 +1,5 @@
 import logging
-im
+import asyncio
 os = __import__('os')
 from telethon import TelegramClient
 from telethon.sessions import StringSession
@@ -15,12 +15,24 @@ if not string_session:
     print("CRITICAL ERROR: Railway variables mein 'SESSION_STRING' nahi mila ya khali hai!")
     exit(1)
 
-# Source aur Target Channel ki IDs (String format mein taaki invalid ID ka error na aaye)
-SOURCE_CHANNEL = -1004476590137
-TARGET_CHANNEL = -100447659013
+# Naya Source Channel aur Target Channel
+SOURCE_CHANNEL = -1003855434388
+TARGET_CHANNEL = -1004307539975
 
-# Duplicate messages rokne ke liye memory set
-processed_ids = set()
+# File-based tracking taaki restart karne par duplicate videos na jayein
+TRACKING_FILE = "sent_hashes.txt"
+
+def load_processed_hashes():
+    if os.path.exists(TRACKING_FILE):
+        with open(TRACKING_FILE, "r") as f:
+            return set(line.strip() for line in f if line.strip())
+    return set()
+
+def save_hash(media_hash):
+    with open(TRACKING_FILE, "a") as f:
+        f.write(f"{media_hash}\n")
+
+processed_hashes = load_processed_hashes()
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -28,77 +40,62 @@ logging.basicConfig(level=logging.INFO)
 # Client initialize karein
 client = TelegramClient(StringSession(string_session), api_id, api_hash)
 
-async def transfer_everything_smart():
-    print("🤖 Smart All-in-One Transfer Bot chalu ho gaya hai...")
+async def transfer_clean_media():
+    print("🤖 Clean Transfer Bot chalu ho gaya hai (-1003855434388 se clean upload)...")
+    uploaded_count = 0
     
     async with client:
-        # Pehle se target aur source entity ko resolve kar lenge taaki 'Invalid object ID' ka error khatam ho jaye
-        try:
-            source_entity = await client.get_entity(SOURCE_CHANNEL)
-            target_entity = await client.get_entity(TARGET_CHANNEL)
-            print(f"✅ Channels successfully connected!")
-        except Exception as e:
-            print(f"❌ Channel ID resolve karne mein error aa gaya: {e}")
-            return
-
-        sent_count = 0
-        async for message in client.iter_messages(source_entity, reverse=True):
-            if message.id in processed_ids:
-                continue
-                
-            file_path = None
+        # Purane se naye kram mein messages padhenge
+        async for message in client.iter_messages(SOURCE_CHANNEL, reverse=True):
             try:
-                # Step 1: Pehle Direct Forward try karein
-                try:
-                    await client.forward_messages(target_entity, message)
-                    processed_ids.add(message.id)
-                    sent_count += 1
-                    print(f"⚡ [Direct Forward] Sent count: {sent_count}")
-                    await asyncio.sleep(0.3)
-                    continue
-                except Exception:
-                    pass
-                
-                # Step 2: Agar Forwarding Off hai, toh Media ya Text ko handle karein
+                # Agar message mein media (video/photo) hai
                 if message.media:
-                    file_path = await message.download_media()
+                    media_hash = getattr(message.file, 'hash', None) if message.file else None
                     
-                    if file_path and os.path.exists(file_path):
-                        await client.send_file(
-                            target_entity, 
-                            file_path, 
-                            caption=message.text if message.text else None,
-                            supports_streaming=True
-                        )
-                        sent_count += 1
-                        print(f"✅ [Bypass Media Upload] Sent count: {sent_count}")
-                    else:
-                        print(f"⚠️ Media download nahi ho saki: {message.id}")
-                
+                    # Agar yeh video pehle se bhej di gayi hai, toh skip kar do
+                    if media_hash and str(media_hash) in processed_hashes:
+                        continue
+                    
+                    # Fresh send without any forward tag (Clean upload)
+                    await client.send_file(
+                        TARGET_CHANNEL,
+                        message.media,
+                        caption=message.text if message.text else None,
+                        supports_streaming=True
+                    )
+                    
+                    if media_hash:
+                        processed_hashes.add(str(media_hash))
+                        save_hash(str(media_hash))
+                        
+                    uploaded_count += 1
+                    print(f"✅ [Fresh Upload & Saved] Sent count: {uploaded_count}")
+                    
                 elif message.text:
-                    await client.send_message(target_entity, message.text)
-                    sent_count += 1
-                    print(f"✅ [Text Sent] Sent count: {sent_count}")
+                    # Agar sirf text message hai
+                    msg_id_str = f"text_{message.id}"
+                    if msg_id_str in processed_hashes:
+                        continue
+                        
+                    await client.send_message(TARGET_CHANNEL, message.text)
+                    processed_hashes.add(msg_id_str)
+                    save_hash(msg_id_str)
+                    
+                    uploaded_count += 1
+                    print(f"✅ [Text Sent] Sent count: {uploaded_count}")
                 
-                processed_ids.add(message.id)
-                await asyncio.sleep(0.5)
-                
+                # Rate limit se bachne ke liye chhota sa gap
+                await asyncio.sleep(0.3)
+                    
             except Exception as e:
-                print(f"❌ Error message ID {message.id} par: {e}")
+                print(f"❌ Error aa gaya message ID {message.id} par: {e}")
                 continue
                 
-            finally:
-                if file_path and os.path.exists(file_path):
-                    try:
-                        os.remove(file_path)
-                    except Exception as del_err:
-                        print(f"⚠️ Temp file delete error: {del_err}")
-                
-    print("🎉 Sabhi messages successfully transfer ho chuke hain!")
+    print("🎉 Sabhi videos bina kisi forward tag ke aur bina duplicate ke transfer ho chuki hain!")
 
 def main():
     with client:
-        client.loop.run_until_complete(transfer_everything_smart())
+        client.loop.run_until_complete(transfer_clean_media())
 
 if __name__ == '__main__':
     main()
