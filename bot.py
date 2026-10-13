@@ -4,7 +4,7 @@ os = __import__('os')
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
-# Aapki Purani API Credentials
+# Aapki API Credentials
 api_id = 38322948
 api_hash = '71abd5e892c8ecd676cd3460fb2289fb'
 
@@ -15,9 +15,9 @@ if not string_session:
     print("CRITICAL ERROR: Railway variables mein 'SESSION_STRING' nahi mila ya khali hai!")
     exit(1)
 
-# Source aur Target Channel ki IDs (Target ke aage -100 zaroori hai)
+# Source aur Target Channel ki IDs (String format mein taaki invalid ID ka error na aaye)
 SOURCE_CHANNEL = -1004476590137
-TARGET_CHANNEL = -100447659013  # Yahan -100 lagana compulsory hai
+TARGET_CHANNEL = -100447659013
 
 # Duplicate messages rokne ke liye memory set
 processed_ids = set()
@@ -30,10 +30,19 @@ client = TelegramClient(StringSession(string_session), api_id, api_hash)
 
 async def transfer_everything_smart():
     print("🤖 Smart All-in-One Transfer Bot chalu ho gaya hai...")
-    sent_count = 0
     
     async with client:
-        async for message in client.iter_messages(SOURCE_CHANNEL, reverse=True):
+        # Pehle se target aur source entity ko resolve kar lenge taaki 'Invalid object ID' ka error khatam ho jaye
+        try:
+            source_entity = await client.get_entity(SOURCE_CHANNEL)
+            target_entity = await client.get_entity(TARGET_CHANNEL)
+            print(f"✅ Channels successfully connected!")
+        except Exception as e:
+            print(f"❌ Channel ID resolve karne mein error aa gaya: {e}")
+            return
+
+        sent_count = 0
+        async for message in client.iter_messages(source_entity, reverse=True):
             if message.id in processed_ids:
                 continue
                 
@@ -41,7 +50,7 @@ async def transfer_everything_smart():
             try:
                 # Step 1: Pehle Direct Forward try karein
                 try:
-                    await client.forward_messages(TARGET_CHANNEL, message)
+                    await client.forward_messages(target_entity, message)
                     processed_ids.add(message.id)
                     sent_count += 1
                     print(f"⚡ [Direct Forward] Sent count: {sent_count}")
@@ -56,7 +65,7 @@ async def transfer_everything_smart():
                     
                     if file_path and os.path.exists(file_path):
                         await client.send_file(
-                            TARGET_CHANNEL, 
+                            target_entity, 
                             file_path, 
                             caption=message.text if message.text else None,
                             supports_streaming=True
@@ -67,7 +76,7 @@ async def transfer_everything_smart():
                         print(f"⚠️ Media download nahi ho saki: {message.id}")
                 
                 elif message.text:
-                    await client.send_message(TARGET_CHANNEL, message.text)
+                    await client.send_message(target_entity, message.text)
                     sent_count += 1
                     print(f"✅ [Text Sent] Sent count: {sent_count}")
                 
