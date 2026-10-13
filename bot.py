@@ -15,15 +15,18 @@ if not string_session:
     print("CRITICAL ERROR: Railway variables mein 'SESSION_STRING' nahi mila ya khali hai!")
     exit(1)
 
-# Multiple Source Channels ki Updated List
+# Multiple Source Channels ki List
 SOURCE_CHANNELS = [
     -1004321038948,
     -1003863501103,
     -1004296863313
 ]
 
-# Ek hi Single Target Channel jahan saari videos upload hongi
+# Target Channel jahan saari videos aayengi
 TARGET_CHANNEL = -1004490293383
+
+# Duplicate videos rokne ke liye global memory set
+processed_hashes = set()
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -41,15 +44,32 @@ async def transfer_from_channel(source_id):
         try:
             # Check karein ki message mein video hai ya nahi
             if message.video or (message.document and 'video' in message.document.mime_type):
-                print(f"📥 Video download ki ja rahi hai (ID: {message.id})...")
                 
-                # Forward restriction bypass karne ke liye pehle media download karein
+                # 🛑 Duplicate Check: Agar media ka hash pehle se hai, toh skip kar do
+                media_hash = getattr(message.file, 'hash', None)
+                if media_hash and media_hash in processed_hashes:
+                    continue
+                
+                # Step 1: Pehle Direct Forward try karein (Instant speed ke liye)
+                try:
+                    await client.forward_messages(TARGET_CHANNEL, message)
+                    
+                    if media_hash:
+                        processed_hashes.add(media_hash)
+                        
+                    uploaded_count += 1
+                    print(f"⚡ [Direct Forward] Sent count from {source_id}: {uploaded_count}")
+                    await asyncio.sleep(0.1) # Bahut hi kam gap taaki speed super fast rahe
+                    continue # Direct forward ho gaya toh download ka sawal hi nahi uthta!
+                
+                except Exception:
+                    # Agar forward restrict hai, tabhi download aur re-upload par jayega
+                    print(f"🔒 Restricted channel, downloading (ID: {message.id})...")
+                
+                # Step 2: Sirf restricted content ke liye Download & Re-upload
                 file_path = await message.download_media()
                 
                 if file_path and os.path.exists(file_path):
-                    print(f"📤 Target channel par fresh upload ho rahi hai...")
-                    
-                    # Target channel par re-upload karein
                     await client.send_file(
                         TARGET_CHANNEL, 
                         file_path, 
@@ -57,20 +77,21 @@ async def transfer_from_channel(source_id):
                         supports_streaming=True
                     )
                     
+                    if media_hash:
+                        processed_hashes.add(media_hash)
+                        
                     uploaded_count += 1
-                    print(f"✅ Successfully sent count from {source_id}: {uploaded_count}")
+                    print(f"✅ [Bypass Upload] Sent count from {source_id}: {uploaded_count}")
                 else:
                     print(f"⚠️ File download nahi ho saki: {message.id}")
                 
-                # Flood wait se bachne ke liye chhota sa gap
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.3)
                     
         except Exception as e:
             print(f"❌ Error aa gaya: {e}")
             continue
             
         finally:
-            # Temporary file ko delete karein taaki Railway disk space full na ho
             if file_path and os.path.exists(file_path):
                 try:
                     os.remove(file_path)
@@ -79,13 +100,12 @@ async def transfer_from_channel(source_id):
 
 async def main_runner():
     async with client:
-        print("🤖 Multi-source transfer bot chalu ho gaya hai...")
+        print("🤖 Lightning Fast Smart Transfer Bot chalu ho gaya hai...")
         
-        # Har ek source channel par ek ke baad ek process chalayega
         for source_id in SOURCE_CHANNELS:
             await transfer_from_channel(source_id)
             
-        print("🎉 Sabhi source channels ki videos successfully transfer ho chuki hain!")
+        print("🎉 Sabhi channels ka transfer complete ho chuka hai!")
 
 def main():
     with client:
