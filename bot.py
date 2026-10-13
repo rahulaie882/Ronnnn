@@ -41,14 +41,15 @@ logging.basicConfig(level=logging.INFO)
 client = TelegramClient(StringSession(string_session), api_id, api_hash)
 
 async def transfer_clean_media():
-    print("🤖 Clean Transfer Bot chalu ho gaya hai (-1003855434388 se clean upload)...")
+    print("🤖 Clean Transfer Bot chalu ho gaya hai...")
     uploaded_count = 0
     
     async with client:
         # Purane se naye kram mein messages padhenge
         async for message in client.iter_messages(SOURCE_CHANNEL, reverse=True):
+            file_path = None
             try:
-                # Agar message mein media (video/photo) hai
+                # Agar message mein media hai
                 if message.media:
                     media_hash = getattr(message.file, 'hash', None) if message.file else None
                     
@@ -56,20 +57,25 @@ async def transfer_clean_media():
                     if media_hash and str(media_hash) in processed_hashes:
                         continue
                     
-                    # Fresh send without any forward tag (Clean upload)
-                    await client.send_file(
-                        TARGET_CHANNEL,
-                        message.media,
-                        caption=message.text if message.text else None,
-                        supports_streaming=True
-                    )
+                    # Clean upload without any forward tag
+                    file_path = await message.download_media()
                     
-                    if media_hash:
-                        processed_hashes.add(str(media_hash))
-                        save_hash(str(media_hash))
+                    if file_path and os.path.exists(file_path):
+                        await client.send_file(
+                            TARGET_CHANNEL,
+                            file_path,
+                            caption=message.text if message.text else None,
+                            supports_streaming=True
+                        )
                         
-                    uploaded_count += 1
-                    print(f"✅ [Fresh Upload & Saved] Sent count: {uploaded_count}")
+                        if media_hash:
+                            processed_hashes.add(str(media_hash))
+                            save_hash(str(media_hash))
+                            
+                        uploaded_count += 1
+                        print(f"✅ [Clean Upload & Saved] Sent count: {uploaded_count}")
+                    else:
+                        print(f"⚠️ Media download nahi ho saki: {message.id}")
                     
                 elif message.text:
                     # Agar sirf text message hai
@@ -84,12 +90,19 @@ async def transfer_clean_media():
                     uploaded_count += 1
                     print(f"✅ [Text Sent] Sent count: {uploaded_count}")
                 
-                # Rate limit se bachne ke liye chhota sa gap
+                # Chhota sa gap rate limit se bachne ke liye
                 await asyncio.sleep(0.3)
                     
             except Exception as e:
                 print(f"❌ Error aa gaya message ID {message.id} par: {e}")
                 continue
+                
+            finally:
+                if file_path and os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except Exception:
+                        pass
                 
     print("🎉 Sabhi videos bina kisi forward tag ke aur bina duplicate ke transfer ho chuki hain!")
 
