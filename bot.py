@@ -15,9 +15,9 @@ if not string_session:
     print("CRITICAL ERROR: Railway variables mein 'SESSION_STRING' nahi mila ya khali hai!")
     exit(1)
 
-# Source aur Target Channel ki IDs
+# Source aur Target Channel ki IDs (Target ke aage -100 zaroori hai)
 SOURCE_CHANNEL = -1004476590137
-TARGET_CHANNEL = -100447659013
+TARGET_CHANNEL = -100447659013  # Yahan -100 lagana compulsory hai
 
 # Duplicate messages rokne ke liye memory set
 processed_ids = set()
@@ -39,7 +39,7 @@ async def transfer_everything_smart():
                 
             file_path = None
             try:
-                # Step 1: Pehle Direct Forward try karein (Agar forwarding on hui toh instant chala jayega)
+                # Step 1: Pehle Direct Forward try karein
                 try:
                     await client.forward_messages(TARGET_CHANNEL, message)
                     processed_ids.add(message.id)
@@ -48,16 +48,13 @@ async def transfer_everything_smart():
                     await asyncio.sleep(0.3)
                     continue
                 except Exception:
-                    # Agar forwarding off (restricted) hai, toh ye block chalega
                     pass
                 
-                # Step 2: Agar Forwarding Off hai, toh Media (Photo/Video/Document) ya Text ko handle karein
+                # Step 2: Agar Forwarding Off hai, toh Media ya Text ko handle karein
                 if message.media:
-                    # Media download karein
                     file_path = await message.download_media()
                     
                     if file_path and os.path.exists(file_path):
-                        # Download ki hui file ko caption ke sath target par bhejein
                         await client.send_file(
                             TARGET_CHANNEL, 
                             file_path, 
@@ -70,7 +67,6 @@ async def transfer_everything_smart():
                         print(f"⚠️ Media download nahi ho saki: {message.id}")
                 
                 elif message.text:
-                    # Agar sirf text message hai aur forward nahi ho raha toh normal send karein
                     await client.send_message(TARGET_CHANNEL, message.text)
                     sent_count += 1
                     print(f"✅ [Text Sent] Sent count: {sent_count}")
@@ -83,7 +79,6 @@ async def transfer_everything_smart():
                 continue
                 
             finally:
-                # Temporary file clean karein
                 if file_path and os.path.exists(file_path):
                     try:
                         os.remove(file_path)
