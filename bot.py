@@ -21,7 +21,7 @@ SOURCE_CHANNELS = [
 ]
 
 # Target Channel jahan saari videos aayengi
-TARGET_CHANNEL = -1003961860287
+TARGET_CHANNEL = -1004346460834
 
 # Duplicate videos rokne ke liye global memory set
 processed_hashes = set()
@@ -48,23 +48,8 @@ async def transfer_from_channel(source_id):
                 if media_hash and media_hash in processed_hashes:
                     continue
                 
-                # Step 1: Pehle Direct Forward try karein (Instant speed ke liye)
-                try:
-                    await client.forward_messages(TARGET_CHANNEL, message)
-                    
-                    if media_hash:
-                        processed_hashes.add(media_hash)
-                        
-                    uploaded_count += 1
-                    print(f"⚡ [Direct Forward] Sent count from {source_id}: {uploaded_count}")
-                    await asyncio.sleep(0.1) # Bahut hi kam gap taaki speed super fast rahe
-                    continue # Direct forward ho gaya toh download ka sawal hi nahi uthta!
-                
-                except Exception:
-                    # Agar forward restrict hai, tabhi download aur re-upload par jayega
-                    print(f"🔒 Restricted channel, downloading (ID: {message.id})...")
-                
-                # Step 2: Sirf restricted content ke liye Download & Re-upload
+                # Always Download & Re-upload → Clean video (no "Forwarded from" tag)
+                print(f"⬇️ Downloading video (ID: {message.id})...")
                 file_path = await message.download_media()
                 
                 if file_path and os.path.exists(file_path):
@@ -79,7 +64,7 @@ async def transfer_from_channel(source_id):
                         processed_hashes.add(media_hash)
                         
                     uploaded_count += 1
-                    print(f"✅ [Bypass Upload] Sent count from {source_id}: {uploaded_count}")
+                    print(f"✅ [Clean Upload] Sent count from {source_id}: {uploaded_count}")
                 else:
                     print(f"⚠️ File download nahi ho saki: {message.id}")
                 
