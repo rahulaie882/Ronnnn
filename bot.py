@@ -1,18 +1,18 @@
 import logging
 import asyncio
-os = __import__('os')
-from telethon import TelegramClient
+import os
+from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 
 # Aapki API Credentials
 api_id = 38322948
 api_hash = '71abd5e892c8ecd676cd3460fb2289fb'
 
-# Railway ke Environment Variable se String Session uthayega
+# Railway ke Environment Variable se String Session
 string_session = os.environ.get('SESSION_STRING', '')
 
 if not string_session:
-    print("CRITICAL ERROR: Railway variables mein 'SESSION_STRING' nahi mila ya khali hai!")
+    print("CRITICAL ERROR: Railway variables mein 'SESSION_STRING' nahi mila!")
     exit(1)
 
 # Multiple Source Channels ki List
@@ -23,8 +23,8 @@ SOURCE_CHANNELS = [
 # Target Channel jahan saari videos aayengi
 TARGET_CHANNEL = -1004346460834
 
-# Duplicate videos rokne ke liye global memory set
-processed_hashes = set()
+# Duplicate videos rokne ke liye memory set
+processed_files = set()
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -32,67 +32,57 @@ logging.basicConfig(level=logging.INFO)
 # Client initialize karein
 client = TelegramClient(StringSession(string_session), api_id, api_hash)
 
-async def transfer_from_channel(source_id):
-    print(f"📥 Source channel {source_id} se transfer shuru ho raha hai...")
-    uploaded_count = 0
-    
-    # Purane se naye kram mein messages padhenge
-    async for message in client.iter_messages(source_id, reverse=True):
-        file_path = None
-        try:
-            # Check karein ki message mein video hai ya nahi
-            if message.video or (message.document and 'video' in message.document.mime_type):
-                
-                # 🛑 Duplicate Check: Agar media ka hash pehle se hai, toh skip kar do
-                media_hash = getattr(message.file, 'hash', None)
-                if media_hash and media_hash in processed_hashes:
-                    continue
-                
-                # Always Download & Re-upload → Clean video (no "Forwarded from" tag)
-                print(f"⬇️ Downloading video (ID: {message.id})...")
-                file_path = await message.download_media()
-                
-                if file_path and os.path.exists(file_path):
-                    await client.send_file(
-                        TARGET_CHANNEL, 
-                        file_path, 
-                        caption=None,
-                        supports_streaming=True
-                    )
-                    
-                    if media_hash:
-                        processed_hashes.add(media_hash)
-                        
-                    uploaded_count += 1
-                    print(f"✅ [Clean Upload] Sent count from {source_id}: {uploaded_count}")
-                else:
-                    print(f"⚠️ File download nahi ho saki: {message.id}")
-                
-                await asyncio.sleep(0.3)
-                    
-        except Exception as e:
-            print(f"❌ Error aa gaya: {e}")
-            continue
+async def process_and_send_video(message):
+    try:
+        # Check karein ki message mein video hai ya nahi
+        if message.video or (message.document and 'video' in message.document.mime_type):
             
-        finally:
-            if file_path and os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
-                except Exception as del_err:
-                    print(f"⚠️ Temp file delete karne mein error: {del_err}")
+            media_obj = message.video or message.document
+            media_id = getattr(media_obj, 'id', None)
+            
+            if media_id and media_id in processed_files:
+                return
+            
+            print(f"🚀 Instant Sending (Message ID: {message.id})...")
+            
+            # 🛑 NO DOWNLOAD REQUIRED: Direct media object bhej raha hai (Bina Tag ke)
+            await client.send_file(
+                TARGET_CHANNEL, 
+                message.media, 
+                caption=message.text if message.text else None,
+                supports_streaming=True
+            )
+            
+            if media_id:
+                processed_files.add(media_id)
+                
+            print(f"✅ Successfully Sent (Clean & Fast) ID: {message.id}")
+            
+    except Exception as e:
+        print(f"❌ Error aa gaya: {e}")
 
 async def main_runner():
-    async with client:
-        print("🤖 Lightning Fast Smart Transfer Bot chalu ho gaya hai...")
-        
-        for source_id in SOURCE_CHANNELS:
-            await transfer_from_channel(source_id)
+    print("🤖 Ultra-Fast Direct Media Sender Bot chalu ho gaya hai...")
+    
+    # 1. Pehle purane messages ko transfer karega
+    for source_id in SOURCE_CHANNELS:
+        print(f"📥 Scanning old messages in {source_id}...")
+        async for message in client.iter_messages(source_id, reverse=True):
+            await process_and_send_video(message)
+            await asyncio.sleep(0.1)
             
-        print("🎉 Sabhi channels ka transfer complete ho chuka hai!")
+    print("🎉 Sync complete! Ab Live Mode active hai.")
+
+# 2. Live New Messages ke liye Event Listener
+@client.on(events.NewMessage(chats=SOURCE_CHANNELS))
+async def live_transfer_handler(event):
+    await process_and_send_video(event.message)
 
 def main():
     with client:
         client.loop.run_until_complete(main_runner())
+        client.run_until_disconnected()
 
 if __name__ == '__main__':
     main()
+    
