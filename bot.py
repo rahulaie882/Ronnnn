@@ -17,13 +17,11 @@ if not string_session:
 
 # Multiple Source Channels ki List
 SOURCE_CHANNELS = [
-    -1004321038948,
-    -1003863501103,
-    -1004296863313
+    -1004485969102,
 ]
 
 # Target Channel jahan saari videos aayengi
-TARGET_CHANNEL = -1004490293383
+TARGET_CHANNEL = -1003961860287
 
 # Duplicate videos rokne ke liye global memory set
 processed_hashes = set()
