@@ -17,8 +17,8 @@ from telethon.errors import (
 # TELEGRAM API CONFIGURATION
 # ==========================================
 
-api_id = 12345678  # Apni API ID daalo
-api_hash = "YOUR_API_HASH"  # Apna API HASH daalo
+api_id = 37093326  # Apni API ID daalo
+api_hash = "6e370e6d265a4866e3af0da44c8334da"  # Apna API HASH daalo
 
 # Control bot ka token
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
